@@ -1,0 +1,11 @@
+{
+  "name": "Mostrador",
+  "short_name": "Mostrador",
+  "description": "Registro de ventas y cierre de caja",
+  "start_url": "/Mostrador/",
+  "scope": "/Mostrador/",
+  "display": "standalone",
+  "background_color": "#202B21",
+  "theme_color": "#202B21",
+  "icons": []
+}
