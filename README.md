@@ -6,7 +6,7 @@ App de ventas y cierre de caja, con login y sincronización en tiempo real entre
 
 ### 1. Pegar las credenciales de Firebase
 Abrí `src/firebaseConfig.js` y reemplazá los valores `"PEGAR_ACA"` por el bloque
-`firebaseConfig` que te dio Firebase cuando registraste la app web.
+`firebaseConfig` que te dio Firebase cuando registraste la app web .
 
 ### 2. Configurar las reglas de seguridad de Firestore
 En la consola de Firebase → Firestore Database → pestaña **Reglas**, pegá el
