@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Receipt, Coins } from 'lucide-react';
 import { formatMoney, formatDateLong, saleTotal } from '../helpers';
 import TicketRow from './TicketRow';
-
+ 
 export default function DayView({ date, sales, onAddSale, onEditSale, showClosingButton, onOpenClosing, emptyHint }) {
   const [showTotal, setShowTotal] = useState(false);
   const total = sales.reduce((acc, s) => acc + saleTotal(s), 0);
@@ -17,16 +17,8 @@ export default function DayView({ date, sales, onAddSale, onEditSale, showClosin
           </>
         )}
       </div>
-
-      {sales.length === 0 ? (
-        <div className="m-empty">{emptyHint}</div>
-      ) : (
-        [...sales].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map((s) => (
-          <TicketRow key={s.id} sale={s} dayDate={date} onClick={() => onEditSale(s)} />
-        ))
-      )}
-
-      <div className="m-actions">
+ 
+      <div className="m-actions" style={{ marginBottom: 22 }}>
         <button className="m-btn m-btn-amber m-btn-block" onClick={onAddSale}>
           <Plus size={18} /> Nueva venta
         </button>
@@ -36,7 +28,15 @@ export default function DayView({ date, sales, onAddSale, onEditSale, showClosin
           </button>
         )}
       </div>
-
+ 
+      {sales.length === 0 ? (
+        <div className="m-empty">{emptyHint}</div>
+      ) : (
+        [...sales].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map((s) => (
+          <TicketRow key={s.id} sale={s} dayDate={date} onClick={() => onEditSale(s)} />
+        ))
+      )}
+ 
       <button
         className="total-toggle-fab"
         onClick={() => setShowTotal((v) => !v)}
