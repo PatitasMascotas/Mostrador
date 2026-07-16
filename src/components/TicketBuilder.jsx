@@ -50,7 +50,8 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
   const cashNum = parseFloat(cashAmount) || 0;
   const mpNum = parseFloat(mpAmount) || 0;
   const mixtoOk = paymentMethod !== 'mixto' || (cashAmount !== '' && mpAmount !== '' && Math.abs(cashNum + mpNum - total) < 0.5);
-  const canSave = items.length > 0 && !!paymentMethod && mixtoOk;
+  const hasPendingDraft = !!productId || price.trim() !== '';
+  const canSave = items.length > 0 && !!paymentMethod && mixtoOk && !hasPendingDraft;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -224,6 +225,15 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
             </div>
           )}
         </div>
+
+        {hasPendingDraft && (
+          <div className="m-warning" style={{ marginTop: 14, marginBottom: 0 }}>
+            <div className="m-warning-text">
+              Tenés un producto cargado que todavía no agregaste a la venta.
+              Tocá <b>"Agregar producto"</b> (o borrá esos campos) antes de guardar.
+            </div>
+          </div>
+        )}
 
         <div className="m-actions">
           {isEditing && (
