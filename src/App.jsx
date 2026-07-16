@@ -124,7 +124,11 @@ function Mostrador({ onLogout }) {
     const exists = cd.sales.some((s) => s.id === sale.id);
     const nextSales = exists ? cd.sales.map((s) => (s.id === sale.id ? sale : s)) : [...cd.sales, sale];
     const next = { date: cd.date, sales: nextSales };
-    await saveJSON('current-day', next);
+    const ok = await saveJSON('current-day', next);
+    if (!ok) {
+      window.alert('No se pudo guardar la venta. Revisá tu conexión y probá de nuevo.');
+      return;
+    }
     setBuilder(null);
   };
 
