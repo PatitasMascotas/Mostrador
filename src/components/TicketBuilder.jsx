@@ -80,7 +80,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
                 <button
                   key={p.id}
                   className={`pill ${productId === p.id ? 'selected' : ''}`}
-                  onClick={() => setProductId(p.id)}
+                  onClick={() => setProductId((prev) => (prev === p.id ? '' : p.id))}
                   type="button"
                 >
                   {p.name}
