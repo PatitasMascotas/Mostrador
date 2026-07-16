@@ -6,6 +6,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
   const [items, setItems] = useState(initialSale ? initialSale.items.map((i) => ({ ...i })) : []);
   const [productId, setProductId] = useState('');
   const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('1');
   const [description, setDescription] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(initialSale?.paymentMethod || '');
   const [cashAmount, setCashAmount] = useState(initialSale?.cashAmount != null ? String(initialSale.cashAmount) : '');
@@ -25,10 +26,13 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
     setEditingDescId(null);
   };
 
+  const unitPriceNum = parseFloat(price) || 0;
+  const quantityNum = quantity.trim() === '' ? 1 : (parseFloat(quantity.replace(',', '.')) || 0);
+  const computedTotal = unitPriceNum * quantityNum;
+
   const addItem = () => {
     const p = products.find((pr) => pr.id === productId);
-    const val = parseFloat(price);
-    if (!p || !val || val <= 0) return;
+    if (!p || !computedTotal || computedTotal <= 0) return;
     setItems((prev) => [
       ...prev,
       {
@@ -36,12 +40,15 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
         productId: p.id,
         productName: p.name,
         profitPercentAtSale: p.profit,
-        price: val,
+        price: Math.round(computedTotal * 100) / 100,
+        unitPrice: quantityNum !== 1 ? unitPriceNum : undefined,
+        quantity: quantityNum !== 1 ? quantityNum : undefined,
         description: description.trim(),
       },
     ]);
     setProductId('');
     setPrice('');
+    setQuantity('1');
     setDescription('');
   };
 
@@ -50,7 +57,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
   const cashNum = parseFloat(cashAmount) || 0;
   const mpNum = parseFloat(mpAmount) || 0;
   const mixtoOk = paymentMethod !== 'mixto' || (cashAmount !== '' && mpAmount !== '' && Math.abs(cashNum + mpNum - total) < 0.5);
-  const hasPendingDraft = !!productId || price.trim() !== '';
+  const hasPendingDraft = !!productId || price.trim() !== '' || (quantity.trim() !== '' && quantity.trim() !== '1');
   const canSave = items.length > 0 && !!paymentMethod && mixtoOk && !hasPendingDraft;
 
   const handleSave = () => {
@@ -91,7 +98,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
 
           <div style={{ display: 'flex', gap: 10 }}>
             <div className="m-field" style={{ flex: 1, marginBottom: 10 }}>
-              <span className="m-label">Precio</span>
+              <span className="m-label">Precio {quantityNum !== 1 ? '(por kilo)' : ''}</span>
               <input
                 className="m-input mono-input"
                 type="number"
@@ -102,20 +109,40 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
                 onKeyDown={(e) => { if (e.key === 'Enter') addItem(); }}
               />
             </div>
-            <div className="m-field" style={{ flex: 2, marginBottom: 10 }}>
-              <span className="m-label">Descripción (opcional)</span>
+            <div className="m-field" style={{ flex: 1, marginBottom: 10 }}>
+              <span className="m-label">Cantidad (kg)</span>
               <input
-                className="m-input"
+                className="m-input mono-input"
                 type="text"
-                placeholder="Ej: bolsa 15kg"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                inputMode="decimal"
+                placeholder="1"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') addItem(); }}
               />
             </div>
           </div>
 
-          <button className="m-btn m-btn-amber m-btn-block" onClick={addItem} disabled={!productId || !price}>
+          <div className="m-field" style={{ marginBottom: 10 }}>
+            <span className="m-label">Descripción (opcional)</span>
+            <input
+              className="m-input"
+              type="text"
+              placeholder="Ej: bolsa 15kg"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addItem(); }}
+            />
+          </div>
+
+          {price !== '' && quantityNum !== 1 && (
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 10 }}>
+              Total a agregar: <b style={{ color: 'var(--ink)' }}>{formatMoney(computedTotal)}</b>
+              {' '}({formatMoney(unitPriceNum)} × {quantity.replace('.', ',')} kg)
+            </div>
+          )}
+
+          <button className="m-btn m-btn-amber m-btn-block" onClick={addItem} disabled={!productId || !price || !computedTotal}>
             <Plus size={17} /> Agregar producto
           </button>
 
@@ -127,6 +154,11 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
                     <PawPrint size={11} style={{ marginTop: 4, flexShrink: 0, color: 'var(--ink-soft)' }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="line-name">{it.productName}</div>
+                      {it.unitPrice && it.quantity && (
+                        <div className="line-desc" style={{ fontStyle: 'normal' }}>
+                          {formatMoney(it.unitPrice)}/kg × {String(it.quantity).replace('.', ',')} kg
+                        </div>
+                      )}
                       {editingDescId === it.id ? (
                         <input
                           className="m-input"
