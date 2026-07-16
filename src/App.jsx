@@ -140,24 +140,25 @@ function Mostrador({ onLogout }) {
   };
 
   const finalizeDay = async (dayObj) => {
-    setFinalizing(true);
-    try {
-      const existing = await loadJSON(`day:${dayObj.date}`, { date: dayObj.date, sales: [] });
-      const merged = new Map();
-      existing.sales.forEach((s) => merged.set(s.id, s));
-      dayObj.sales.forEach((s) => merged.set(s.id, s));
-      const finalDay = { date: dayObj.date, sales: Array.from(merged.values()) };
+  setFinalizing(true);
+  try {
+    const existing = await loadJSON(`day:${dayObj.date}`, { date: dayObj.date, sales: [] });
+    const merged = new Map();
+    existing.sales.forEach((s) => merged.set(s.id, s));
+    dayObj.sales.forEach((s) => merged.set(s.id, s));
+    const finalDay = { date: dayObj.date, sales: Array.from(merged.values()) };
 
-      await saveJSON(`day:${dayObj.date}`, finalDay);
-      const nextIndex = Array.from(new Set([dayObj.date, ...daysIndex])).sort((a, b) => b.localeCompare(a));
-      await saveJSON('days-index', nextIndex);
-      await removeKey('current-day');
-      setClosingOpen(false);
-      setPendingResolveOpen(false);
-    } finally {
-      setFinalizing(false);
-    }
-  };
+    await saveJSON(`day:${dayObj.date}`, finalDay);
+    const nextIndex = Array.from(new Set([dayObj.date, ...daysIndex])).sort((a, b) => b.localeCompare(a));
+    await saveJSON('days-index', nextIndex);
+
+    setClosingOpen(false);
+    setPendingResolveOpen(false);
+    await removeKey('current-day');
+  } finally {
+    setFinalizing(false);
+  }
+};
 
   // ---- history ----
   const openHistoryDay = (date) => {
@@ -233,7 +234,7 @@ function Mostrador({ onLogout }) {
                   <button className="m-btn m-btn-amber" onClick={() => setView('catalog')}>Ir al catálogo</button>
                 </div>
               </div>
-            ) : closingOpen ? (
+            ) : closingOpen && currentDay ? (
               <>
                 <button className="back-link" onClick={() => !finalizing && setClosingOpen(false)}><ArrowLeft size={15} /> Volver</button>
                 <ClosingSummary
