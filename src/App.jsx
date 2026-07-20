@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PawPrint, Plus, Package, Receipt, CalendarDays, ArrowLeft, AlertTriangle, Trash2, Pencil, LogOut } from 'lucide-react';
+import { PawPrint, Plus, Package, Receipt, CalendarDays, ArrowLeft, AlertTriangle, Trash2, Pencil, LogOut, Wallet } from 'lucide-react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { loadJSON, saveJSON, removeKey, subscribeJSON } from './storage';
@@ -11,6 +11,8 @@ import ClosingSummary from './components/ClosingSummary';
 import TicketBuilder from './components/TicketBuilder';
 import ProductFormModal from './components/ProductFormModal';
 import HistoryRowLoader from './components/HistoryRowLoader';
+import FiadosView from './components/FiadosView';
+import ClienteFiadoModal from './components/ClienteFiadoModal';
 
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
@@ -55,6 +57,10 @@ function Mostrador({ onLogout }) {
   const [productModal, setProductModal] = useState(null); // null | {} | product
   const [finalizing, setFinalizing] = useState(false);
 
+  const [fiadoClientes, setFiadoClientes] = useState([]);
+  const [fiadoTab, setFiadoTab] = useState('pendientes'); // pendientes | saldadas
+  const [fiadoModal, setFiadoModal] = useState(null); // null | {} | cliente
+
   // Suscripciones en tiempo real: si otro dispositivo (otra persona atendiendo
   // el local) carga o edita algo, este dispositivo lo ve reflejado enseguida.
   useEffect(() => {
@@ -76,11 +82,13 @@ function Mostrador({ onLogout }) {
       setDaysIndex(val);
       markReady('daysIndex');
     });
+    const unsubFiados = subscribeJSON('fiado-clientes', [], setFiadoClientes);
 
     return () => {
       unsubProducts();
       unsubCurrentDay();
       unsubDaysIndex();
+      unsubFiados();
     };
   }, []);
 
@@ -184,6 +192,22 @@ function Mostrador({ onLogout }) {
     setBuilder(null);
   };
 
+  // ---- fiados (cuenta por cliente) ----
+  const saveFiadoCliente = async (data) => {
+    const exists = fiadoClientes.some((c) => c.id === data.id);
+    const next = exists ? fiadoClientes.map((c) => (c.id === data.id ? data : c)) : [...fiadoClientes, data];
+    setFiadoClientes(next);
+    await saveJSON('fiado-clientes', next);
+  };
+
+  const deleteFiadoCliente = async (id) => {
+    if (!window.confirm('¿Eliminar este cliente y todo su historial de fiado? Esta acción no se puede deshacer.')) return;
+    const next = fiadoClientes.filter((c) => c.id !== id);
+    setFiadoClientes(next);
+    await saveJSON('fiado-clientes', next);
+    setFiadoModal(null);
+  };
+
   if (!ready) {
     return (
       <div className="mostrador-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -214,6 +238,9 @@ function Mostrador({ onLogout }) {
             </button>
             <button className={`m-nav-btn ${view === 'history' || view === 'dayDetail' ? 'active' : ''}`} onClick={() => setView('history')}>
               <CalendarDays size={15} /> Historial
+            </button>
+            <button className={`m-nav-btn ${view === 'fiados' ? 'active' : ''}`} onClick={() => setView('fiados')}>
+              <Wallet size={15} /> Fiados
             </button>
           </div>
           <button className="logout-btn" onClick={onLogout} title="Cerrar sesión">
@@ -335,6 +362,17 @@ function Mostrador({ onLogout }) {
             </div>
           </div>
         )}
+
+        {/* ---- FIADOS ---- */}
+        {view === 'fiados' && (
+          <FiadosView
+            clientes={fiadoClientes}
+            tab={fiadoTab}
+            onTabChange={setFiadoTab}
+            onNew={() => setFiadoModal({})}
+            onOpen={(c) => setFiadoModal(c)}
+          />
+        )}
       </div>
 
       {builder && (
@@ -352,6 +390,15 @@ function Mostrador({ onLogout }) {
           initial={productModal.id ? productModal : null}
           onClose={() => setProductModal(null)}
           onSave={saveProduct}
+        />
+      )}
+
+      {fiadoModal && (
+        <ClienteFiadoModal
+          initial={fiadoModal.id ? fiadoModal : null}
+          onClose={() => setFiadoModal(null)}
+          onSave={saveFiadoCliente}
+          onDelete={deleteFiadoCliente}
         />
       )}
     </div>
