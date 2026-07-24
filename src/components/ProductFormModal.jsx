@@ -20,7 +20,7 @@ export default function ProductFormModal({ initial, onSave, onClose }) {
         </div>
         <div className="m-field">
           <span className="m-label">Ganancia sobre el costo (%)</span>
-          <input className="m-input mono-input" type="number" inputMode="decimal" value={profit} onChange={(e) => setProfit(e.target.value)} placeholder="Ej: 30" />
+          <input className="m-input mono-input" type="number" inputMode="decimal" value={profit} onChange={(e) => setProfit(e.target.value)} placeholder="Ej: 30" onWheel={(e) => e.target.blur()} />
         </div>
         <button
           className="m-btn m-btn-amber m-btn-block"

@@ -134,6 +134,7 @@ export default function ClienteFiadoModal({ initial, onSave, onDelete, onClose }
                   className="m-input mono-input" type="number" inputMode="decimal"
                   value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" autoFocus
                   onKeyDown={(e) => { if (e.key === 'Enter') confirmAdd(); }}
+                  onWheel={(e) => e.target.blur()}
                 />
               </div>
               <div className="m-field" style={{ flex: 1 }}>

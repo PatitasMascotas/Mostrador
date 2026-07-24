@@ -106,6 +106,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') addItem(); }}
+                onWheel={(e) => e.target.blur()}
               />
             </div>
             <div className="m-field" style={{ flex: 1, marginBottom: 10 }}>
@@ -233,6 +234,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
                       placeholder="0"
                       value={cashAmount}
                       onChange={(e) => setCashAmount(e.target.value)}
+                      onWheel={(e) => e.target.blur()}
                     />
                   </div>
                   <div className="m-field" style={{ flex: 1, marginBottom: 0 }}>
@@ -244,6 +246,7 @@ export default function TicketBuilder({ products, initialSale, onSave, onDelete,
                       placeholder="0"
                       value={mpAmount}
                       onChange={(e) => setMpAmount(e.target.value)}
+                      onWheel={(e) => e.target.blur()}
                     />
                   </div>
                 </div>
