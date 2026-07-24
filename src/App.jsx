@@ -13,6 +13,7 @@ import ProductFormModal from './components/ProductFormModal';
 import HistoryRowLoader from './components/HistoryRowLoader';
 import FiadosView from './components/FiadosView';
 import ClienteFiadoModal from './components/ClienteFiadoModal';
+import RangeSummary from './components/RangeSummary';
 
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
@@ -60,6 +61,17 @@ function Mostrador({ onLogout }) {
   const [fiadoClientes, setFiadoClientes] = useState([]);
   const [fiadoTab, setFiadoTab] = useState('pendientes'); // pendientes | saldadas
   const [fiadoModal, setFiadoModal] = useState(null); // null | {} | cliente
+
+  const sieteDiasAtras = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const [rangeDesde, setRangeDesde] = useState(sieteDiasAtras());
+  const [rangeHasta, setRangeHasta] = useState(todayStr());
+  const [rangeLoading, setRangeLoading] = useState(false);
+  const [rangeSales, setRangeSales] = useState(null); // null = todavía no generado
+  const [rangeDaysCount, setRangeDaysCount] = useState(0);
 
   // Suscripciones en tiempo real: si otro dispositivo (otra persona atendiendo
   // el local) carga o edita algo, este dispositivo lo ve reflejado enseguida.
@@ -192,6 +204,21 @@ function Mostrador({ onLogout }) {
     setBuilder(null);
   };
 
+  const generateRangeReport = async () => {
+    if (!rangeDesde || !rangeHasta) return;
+    setRangeLoading(true);
+    try {
+      const datesInRange = daysIndex.filter((d) => d >= rangeDesde && d <= rangeHasta);
+      const dayDocs = await Promise.all(datesInRange.map((d) => loadJSON(`day:${d}`, { date: d, sales: [] })));
+      const daysWithSales = dayDocs.filter((d) => (d.sales || []).length > 0);
+      const allSales = dayDocs.flatMap((d) => d.sales || []);
+      setRangeSales(allSales);
+      setRangeDaysCount(daysWithSales.length);
+    } finally {
+      setRangeLoading(false);
+    }
+  };
+
   // ---- fiados (cuenta por cliente) ----
   const saveFiadoCliente = async (data) => {
     const exists = fiadoClientes.some((c) => c.id === data.id);
@@ -236,7 +263,7 @@ function Mostrador({ onLogout }) {
             <button className={`m-nav-btn ${view === 'catalog' ? 'active' : ''}`} onClick={() => setView('catalog')}>
               <Package size={15} /> Catálogo
             </button>
-            <button className={`m-nav-btn ${view === 'history' || view === 'dayDetail' ? 'active' : ''}`} onClick={() => setView('history')}>
+            <button className={`m-nav-btn ${view === 'history' || view === 'dayDetail' || view === 'rangeReport' ? 'active' : ''}`} onClick={() => setView('history')}>
               <CalendarDays size={15} /> Historial
             </button>
             <button className={`m-nav-btn ${view === 'fiados' ? 'active' : ''}`} onClick={() => setView('fiados')}>
@@ -337,11 +364,58 @@ function Mostrador({ onLogout }) {
         {/* ---- HISTORIAL (lista) ---- */}
         {view === 'history' && (
           <div>
-            <div className="m-day-title hand" style={{ marginBottom: 14 }}>Historial de días</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10 }}>
+              <div className="m-day-title hand" style={{ marginBottom: 0 }}>Historial de días</div>
+              <button className="m-btn m-btn-ghost" onClick={() => setView('rangeReport')} style={{ flexShrink: 0 }}>
+                <CalendarDays size={15} /> Por rango
+              </button>
+            </div>
             {daysIndex.length === 0 && <div className="m-empty">Todavía no cerraste ningún día.</div>}
             {daysIndex.map((date) => (
               <HistoryRowLoader key={date} date={date} onOpen={() => openHistoryDay(date)} />
             ))}
+          </div>
+        )}
+
+        {/* ---- HISTORIAL (resumen por rango de fechas) ---- */}
+        {view === 'rangeReport' && (
+          <div>
+            <button className="back-link" onClick={() => setView('history')}><ArrowLeft size={15} /> Volver al historial</button>
+            <div className="m-day-title hand" style={{ marginBottom: 14 }}>Resumen por rango de fechas</div>
+
+            <div className="m-card">
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div className="m-field" style={{ flex: 1, marginBottom: 10 }}>
+                  <span className="m-label">Desde</span>
+                  <input
+                    className="m-input mono-input" type="date"
+                    value={rangeDesde} onChange={(e) => setRangeDesde(e.target.value)}
+                  />
+                </div>
+                <div className="m-field" style={{ flex: 1, marginBottom: 10 }}>
+                  <span className="m-label">Hasta</span>
+                  <input
+                    className="m-input mono-input" type="date"
+                    value={rangeHasta} onChange={(e) => setRangeHasta(e.target.value)}
+                  />
+                </div>
+              </div>
+              <button
+                className="m-btn m-btn-amber m-btn-block"
+                onClick={generateRangeReport}
+                disabled={!rangeDesde || !rangeHasta || rangeLoading}
+              >
+                {rangeLoading ? 'Generando...' : 'Generar resumen'}
+              </button>
+            </div>
+
+            {rangeSales !== null && (
+              rangeSales.length === 0 ? (
+                <div className="m-empty">No hay ventas cerradas en ese rango de fechas.</div>
+              ) : (
+                <RangeSummary desde={rangeDesde} hasta={rangeHasta} sales={rangeSales} daysWithSales={rangeDaysCount} />
+              )
+            )}
           </div>
         )}
 
